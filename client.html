@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <style>
+      body { margin: 0; padding-bottom: 3rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        a{
+            margin-right: 1rem;
+        }
+        a:not(:nth-child(1)):hover{
+            font-weight: bold;
+        }
+        a:nth-child(1):hover{
+            color: red;
+        }
+        h1{
+            text-align: center;
+        }
+      #form { background: rgba(0, 0, 0, 0.15);  padding: 1rem; position: fixed; bottom: 0; left: 0; right: 0; display: flex; height: 5rem; box-sizing: border-box; backdrop-filter: blur(10px); }
+      #input { border: none; padding: 0 1rem; flex-grow: 1; border-radius: 2rem; margin: 0.25rem; }
+      #input:focus { outline: none; }
+      #form > button { background: #333; border: none; padding: 0 1rem; margin: 0.25rem; border-radius: 3px; outline: none; color: #fff; }
+
+      #messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages > li { padding: 0.5rem 1rem; }
+    </style>
+    <script src="https://kit.fontawesome.com/647367d752.js" crossorigin="anonymous"></script>
+  </head>
+  <body>
+    <h1 id="hola">Escriba su nombre</h1>
+    
+    <ul id="messages"></ul>
+
+    <form id="form" action="">
+        <a  id="bold"><i class="fas fa-bold"></i></a> 
+        
+      <input id="input" autocomplete="off" placeholder="Pon tu nombre"/><button id="btn">Entrar</button>
+    </form>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        var socket = io();
+        var datos={
+            nombre:"",
+            texto:"",
+            negrita:false,
+            color:""
+        };
+        
+        
+        var messages = document.getElementById('messages');
+        var form = document.getElementById('form');
+        var input = document.getElementById('input');
+        var boton=document.getElementById('btn')
+        var bienvenida=null;
+        var input2=null;
+        var boton2=null;
+      
+        var negrita=document.getElementById('bold');
+        negrita.style.display="none";
+
+        var colores=null;
+        var n=false;
+
+
+        function obtenerDatos(){
+            if (input.value) {
+                datos.nombre=input.value;
+                if(bienvenida==null){
+                    var titulo= document.getElementById('hola');
+                    titulo.textContent="Bienvenid@ "+datos.nombre;
+                    titulo.style.textAlign="center";
+                }
+                input.remove();
+                boton.remove();
+                
+                if(input2==null && boton2==null){               
+                    input2=document.createElement("input");
+                    input2.id="input";
+                    input2.placeholder="Escriba un mensaje";
+
+                    negrita.style.display="block";
+
+                    colores=document.createElement("input");
+                    colores.setAttribute("type","color");
+
+                    form.appendChild(colores)
+                    form.appendChild(input2);
+                
+                    colores.addEventListener("change",function(e){
+                        e.preventDefault();
+                        datos.color = colores.value;
+                    })
+
+                    negrita.addEventListener("click",function(){
+                        n=!n
+                        datos.negrita=n;
+                        if(n){
+                            negrita.style.color="red"
+                        }else{
+                            negrita.style.color="black"
+                        }
+                        
+                    })
+
+                    input2.addEventListener("keypress",function(e){
+                        if (input2.value && e.keyCode==13) {
+                            datos.texto=input2.value;
+                            socket.emit('mensajeDesdeServidor', datos);
+                            input2.value=" ";
+                        }
+                    })
+                    
+                }
+            
+            }
+
+        }
+
+        form.addEventListener('submit', function(e) {
+          e.preventDefault();
+          obtenerDatos();
+        });
+        
+        boton.addEventListener('click',obtenerDatos)
+        
+      
+        socket.on('mensajeDesdeServidor', function(dato) {
+            var nom=dato.nombre;
+            var tex=dato.texto;
+            var item = document.createElement('li');
+
+            item.textContent = nom+": "+tex;
+            item.style.color=dato.color
+            if(dato.negrita){
+                item.style.fontWeight="bold"
+            }
+            messages.appendChild(item);
+        
+            window.scrollTo(0, document.body.scrollHeight);
+        });
+      </script>
+  </body>
+</html>
